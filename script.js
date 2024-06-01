@@ -372,6 +372,7 @@ function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTe
             }
             sortTeams(teams)
             display(teams)
+
             
             console.log(`wynik meczu ${homeTeam.name}  ${homeValue} : ${awayValue} ${awayTeam.name} \n
             winner is ${winner}

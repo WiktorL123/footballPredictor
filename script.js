@@ -175,22 +175,31 @@ function sortTeams(teams){
         }
         return sum
     }
+
     let sumOfPoints = countSumOfPoints(teams)
     if(sumOfPoints===0){
         teams.sort((a, b)=>a.name.localeCompare(b.name)).forEach((team, index)=>team.position=index+1)
     }
+
     else {
-        teams.sort((a, b) => b.points - a.points).forEach((team, index) => {
-            team.position = index + 1
-        })
+
+        teams.sort((a, b)=>{
+            if(b.points !== a.points) {
+                return b.points - a.points
+            }
+            else if(b.goalsDifference !== a.goalsDifference){
+                return b.goalsDifference - a.goalsDifference
+            }
+
+        }).forEach((team, index)=>team.position=index+1)
     }
 
 }
-function display(teams){
-    teams.forEach(team=>{
-        console.log(`${team.position} ${team.name} RM:${team.matchesPlayed} W: ${team.matchesWon} R: ${team.matchesDraw}  P: ${team.matchesLost} BZ: ${team.goalsScored} BS: ${team.goalsConceded} RB: ${team.goalsDifference} PKT: ${team.points}`)
-    })
-}
+// function display(teams){
+//     teams.forEach(team=>{
+//         console.log(`${team.position} ${team.name} RM:${team.matchesPlayed} W: ${team.matchesWon} R: ${team.matchesDraw}  P: ${team.matchesLost} BZ: ${team.goalsScored} BS: ${team.goalsConceded} RB: ${team.goalsDifference} PKT: ${team.points}`)
+//     })
+// }
 function createTable(){
     let table = document.createElement('table');
     let header = document.createElement('tr')
@@ -226,7 +235,30 @@ function createTable(){
     document.body.appendChild(table)
 }
 
-function createMatch(teams){
+let currentMatchDay = 1
+let numberOfMatchDays = (teams.length-1)*2
+let numberOfMatches = teams.length/2
+function createMatchDay(){
+
+
+    let matchDayDiv = document.createElement('div')
+        matchDayDiv.setAttribute('class','match-day-div')
+        document.body.appendChild(matchDayDiv)
+
+
+        for (let match = 0; match<numberOfMatches; match++){
+            createMatch(teams, currentMatchDay, match, matchDayDiv)
+        }
+
+    if (currentMatchDay===1) {
+        console.log('jestem w ifie w funkcji CreateMatchDay kolejka nr' + currentMatchDay)
+        createTable()
+    }
+    else {
+        updateTable()
+    }
+}
+function createMatch(teams, matchDay, matchNumber, matchDayDiv){
     function createHomeDiv(homeTeam, homeIndex) {
         let homeTeamDiv = document.createElement('div')
         homeTeamDiv.setAttribute('class', 'home-team-div')
@@ -279,27 +311,21 @@ function createMatch(teams){
         header.innerHTML=value
         return header
     }
+    
 
 
     let matchDiv = document.createElement('div')
     matchDiv.setAttribute('class', 'match-div')
-    let homeTeamIndex = Math.floor(Math.random()*teams.length)
-    let awayTeamIndex
-    do{
-        awayTeamIndex = Math.floor(Math.random()*teams.length)
-    }while (awayTeamIndex===homeTeamIndex)
-    let newHomeIndex = homeTeamIndex+1
-    let newAwayIndex = awayTeamIndex+1
 
+    //
+
+    let numberOfTeams = teams.length
+    let newHomeIndex = (matchNumber + matchDay - 1)%numberOfTeams
+    let newAwayIndex = (numberOfTeams - matchNumber + matchDay -2) % numberOfTeams
 
     let homeTeam = teams[newHomeIndex]
     let awayTeam = teams[newAwayIndex]
 
-
-    console.log(teams[newHomeIndex])
-    console.log(homeTeam)
-
-    console.log(awayTeam)
 
 
 
@@ -307,7 +333,7 @@ function createMatch(teams){
 
 
     let button = createButton()
-    let header = createHeader('kolejka 1')
+    let header = createHeader(`kolejka ${matchDay}`)
     let homeTeamDiv = createHomeDiv(homeTeam, newHomeIndex);
     let homeTeamScoreInput = createInput('home goals', 'home-input' );
     let vsDiv = createVsDiv();
@@ -329,20 +355,58 @@ function createMatch(teams){
 
 
 
-    calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTeam, button )
+    calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTeam, button, matchDay, matchDayDiv )
 
-    document.body.appendChild(matchDiv);
+   matchDayDiv.appendChild(matchDiv)
 
 }
 
-function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTeam, button ) {
+function updateTable() {
+    let table = document.querySelector('table')
+    let rows = Array.from(table.rows).slice(1)
+    rows.forEach(row=>table.deleteRow(row.rowIndex))
+    teams.forEach(team=>{
+        let tr=document.createElement('tr')
+        let props=[
+            team.position,
+            team.name,
+            team.matchesPlayed,
+            team.matchesWon,
+            team.matchesDraw,
+            team.matchesLost,
+            team.goalsScored,
+            team.goalsConceded,
+            team.goalsDifference,
+            team.points
+
+        ]
+        props.forEach(prop=>{
+            let td = document.createElement('td')
+            td.appendChild(document.createTextNode(prop))
+            tr.appendChild(td)
+        })
+        table.appendChild(tr)
+    })
+}
+
+function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTeam, button, matchDay, matchDayDiv ) {
+    let isClicked = false
+    console.log('przed klyk '+ isClicked)
     button.addEventListener('click', function () {
+        if (isClicked){
+            alert('juz ustawiles wynik dla tego meczu')
+            return
+        }
+       isClicked=true
+        console.log('w trakcie klyk ' + isClicked)
         let winner
         let homeValue = parseInt(homeTeamScoreInput.value)
          let awayValue = parseInt(awayTeamScoreInput.value)
             if (homeValue<0||awayValue<0){
                 console.log('liczba bramek nie może być ujemna')
             }
+
+
             else {
                 homeTeam.matchesPlayed++
                 awayTeam.matchesPlayed++
@@ -351,7 +415,8 @@ function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTe
                 homeTeam.goalsConceded += awayValue
                 awayTeam.goalsConceded += homeValue
                 homeTeam.goalsDifference = homeTeam.goalsScored-homeTeam.goalsConceded
-                awayTeam.goalsDifference = awayTeam.goalsScored-homeTeam.goalsConceded
+                awayTeam.goalsDifference = awayTeam.goalsScored-awayTeam.goalsConceded
+
 
                 if (homeValue < awayValue) {
                     awayTeam.points += 3
@@ -370,10 +435,15 @@ function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTe
                     winner = 'remis'
                 }
             }
-            sortTeams(teams)
-            display(teams)
 
-            
+
+            sortTeams(teams)
+
+                let allInputsFilled = Array.from(matchDayDiv.querySelectorAll('.home-input, .away-input' ))
+                    .every(input=>input.value!=='')
+
+
+
             console.log(`wynik meczu ${homeTeam.name}  ${homeValue} : ${awayValue} ${awayTeam.name} \n
             winner is ${winner}
                             `)
@@ -382,7 +452,7 @@ function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTe
 
         console.log(homeTeam.points)
     })
-   
+
 
 }
 
@@ -392,8 +462,9 @@ function calculateMatch(homeTeamScoreInput, awayTeamScoreInput, homeTeam, awayTe
 
 
 sortTeams(teams)
-createMatch(teams)
+createMatchDay()
+
 
 //display(teams)
-createTable()
+
 
